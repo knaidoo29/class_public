@@ -466,6 +466,7 @@ int perturbations_output_data(
           class_store_double(dataptr,tk[ppt->index_tp_delta_g],ppt->has_source_delta_g,storeidx);
           class_store_double(dataptr,tk[ppt->index_tp_delta_b],ppt->has_source_delta_b,storeidx);
           class_store_double(dataptr,tk[ppt->index_tp_delta_cdm],ppt->has_source_delta_cdm,storeidx);
+          class_store_double(dataptr,tk[ppt->index_tp_delta_eDM],ppt->has_source_delta_eDM,storeidx);
           class_store_double(dataptr,tk[ppt->index_tp_delta_idm],ppt->has_source_delta_idm,storeidx);
           class_store_double(dataptr,tk[ppt->index_tp_delta_fld],ppt->has_source_delta_fld,storeidx);
           class_store_double(dataptr,tk[ppt->index_tp_delta_ur],ppt->has_source_delta_ur,storeidx);
@@ -516,6 +517,7 @@ int perturbations_output_data(
 
         /* rescale and reorder the matter transfer functions following the CMBFAST/CAMB convention */
         class_store_double_or_default(dataptr,-tk[ppt->index_tp_delta_cdm]/k2,ppt->has_source_delta_cdm,storeidx,0.0);
+        class_store_double_or_default(dataptr,-tk[ppt->index_tp_delta_eDM]/k2,ppt->has_source_delta_eDM,storeidx,0.0);
         class_store_double_or_default(dataptr,-tk[ppt->index_tp_delta_b]/k2,ppt->has_source_delta_b,storeidx,0.0);
         class_store_double_or_default(dataptr,-tk[ppt->index_tp_delta_g]/k2,ppt->has_source_delta_g,storeidx,0.0);
         class_store_double_or_default(dataptr,-tk[ppt->index_tp_delta_ur]/k2,ppt->has_source_delta_ur,storeidx,0.0);
@@ -554,6 +556,7 @@ int perturbations_output_titles(
       class_store_columntitle(titles,"d_g",_TRUE_);
       class_store_columntitle(titles,"d_b",_TRUE_);
       class_store_columntitle(titles,"d_cdm",pba->has_cdm);
+      class_store_columntitle(titles,"d_eDM",pba->has_eDM);
       class_store_columntitle(titles,"d_idm",pba->has_idm);
       class_store_columntitle(titles,"d_fld",pba->has_fld);
       class_store_columntitle(titles,"d_ur",pba->has_ur);
@@ -583,6 +586,7 @@ int perturbations_output_titles(
       class_store_columntitle(titles,"t_g",_TRUE_);
       class_store_columntitle(titles,"t_b",_TRUE_);
       class_store_columntitle(titles,"t_cdm",((pba->has_cdm == _TRUE_) && (ppt->gauge != synchronous)));
+      class_store_columntitle(titles,"t_eDM",pba->has_eDM);
       class_store_columntitle(titles,"t_idm",pba->has_idm);
       class_store_columntitle(titles,"t_fld",pba->has_fld);
       class_store_columntitle(titles,"t_ur",pba->has_ur);
@@ -604,6 +608,7 @@ int perturbations_output_titles(
 
     class_store_columntitle(titles,"k (h/Mpc)",_TRUE_);
     class_store_columntitle(titles,"-T_cdm/k2",_TRUE_);
+    class_store_columntitle(titles,"-T_eDM/k2",_TRUE_);
     class_store_columntitle(titles,"-T_b/k2",_TRUE_);
     class_store_columntitle(titles,"-T_g/k2",_TRUE_);
     class_store_columntitle(titles,"-T_ur/k2",_TRUE_);
@@ -933,10 +938,7 @@ int perturbations_init(
 
     sz = sizeof(struct perturbations_workspace);
 
-#pragma omp parallel                                            \
-  shared(pppw,ppr,pba,pth,ppt,index_md,abort,number_of_threads) \
-  private(thread)                                               \
-  num_threads(number_of_threads)
+#pragma omp parallel shared(pppw,ppr,pba,pth,ppt,index_md,abort,number_of_threads) private(thread) num_threads(number_of_threads)
 
     {
 
@@ -974,10 +976,7 @@ int perturbations_init(
 
       abort = _FALSE_;
 
-#pragma omp parallel                                                    \
-  shared(pppw,ppr,pba,pth,ppt,index_md,index_ic,abort,number_of_threads) \
-  private(index_k,thread,tstart,tstop,tspent)                           \
-  num_threads(number_of_threads)
+#pragma omp parallel shared(pppw,ppr,pba,pth,ppt,index_md,index_ic,abort,number_of_threads) private(index_k,thread,tstart,tstop,tspent) num_threads(number_of_threads)
 
       {
 
@@ -1038,10 +1037,7 @@ int perturbations_init(
 
     abort = _FALSE_;
 
-#pragma omp parallel                                \
-  shared(pppw,ppt,index_md,abort,number_of_threads) \
-  private(thread)                                   \
-  num_threads(number_of_threads)
+#pragma omp parallel shared(pppw,ppt,index_md,abort,number_of_threads) private(thread) num_threads(number_of_threads)
 
     {
 
@@ -1071,10 +1067,7 @@ int perturbations_init(
 
         abort = _FALSE_;
 
-#pragma omp parallel                                    \
-  shared(ppt,index_md,index_ic,abort,number_of_threads) \
-  private(index_tp)                                     \
-  num_threads(number_of_threads)
+#pragma omp parallel shared(ppt,index_md,index_ic,abort,number_of_threads) private(index_tp) num_threads(number_of_threads)
 
         {
 
@@ -1291,6 +1284,7 @@ int perturbations_indices(
   ppt->has_source_delta_g = _FALSE_;
   ppt->has_source_delta_b = _FALSE_;
   ppt->has_source_delta_cdm = _FALSE_;
+  ppt->has_source_delta_eDM = _FALSE_;
   ppt->has_source_delta_idm = _FALSE_;
   ppt->has_source_delta_dcdm = _FALSE_;
   ppt->has_source_delta_fld = _FALSE_;
@@ -1306,6 +1300,7 @@ int perturbations_indices(
   ppt->has_source_theta_g = _FALSE_;
   ppt->has_source_theta_b = _FALSE_;
   ppt->has_source_theta_cdm = _FALSE_;
+  ppt->has_source_theta_eDM = _FALSE_;
   ppt->has_source_theta_idm = _FALSE_;
   ppt->has_source_theta_dcdm = _FALSE_;
   ppt->has_source_theta_fld = _FALSE_;
@@ -1396,6 +1391,8 @@ int perturbations_indices(
         ppt->has_source_delta_b = _TRUE_;
         if (pba->has_cdm == _TRUE_)
           ppt->has_source_delta_cdm = _TRUE_;
+        if (pba->has_eDM == _TRUE_)
+          ppt->has_source_delta_eDM = _TRUE_;
         if (pba->has_idm == _TRUE_)
           ppt->has_source_delta_idm = _TRUE_;
         if (pba->has_dcdm == _TRUE_)
@@ -1427,6 +1424,8 @@ int perturbations_indices(
         ppt->has_source_theta_b = _TRUE_;
         if ((pba->has_cdm == _TRUE_) && (ppt->gauge != synchronous))
           ppt->has_source_theta_cdm = _TRUE_;
+        if (pba->has_eDM == _TRUE_)
+          ppt->has_source_theta_eDM = _TRUE_;
         if (pba->has_idm == _TRUE_)
           ppt->has_source_theta_idm = _TRUE_;
         if (pba->has_dcdm == _TRUE_)
@@ -1505,6 +1504,7 @@ int perturbations_indices(
       class_define_index(ppt->index_tp_delta_g,    ppt->has_source_delta_g,   index_type,1);
       class_define_index(ppt->index_tp_delta_b,    ppt->has_source_delta_b,   index_type,1);
       class_define_index(ppt->index_tp_delta_cdm,  ppt->has_source_delta_cdm, index_type,1);
+      class_define_index(ppt->index_tp_delta_eDM,  ppt->has_source_delta_eDM, index_type,1);
       class_define_index(ppt->index_tp_delta_idm,  ppt->has_source_delta_idm, index_type,1);
       class_define_index(ppt->index_tp_delta_dcdm, ppt->has_source_delta_dcdm,index_type,1);
       class_define_index(ppt->index_tp_delta_fld,  ppt->has_source_delta_fld, index_type,1);
@@ -1519,6 +1519,7 @@ int perturbations_indices(
       class_define_index(ppt->index_tp_theta_g,    ppt->has_source_theta_g,   index_type,1);
       class_define_index(ppt->index_tp_theta_b,    ppt->has_source_theta_b,   index_type,1);
       class_define_index(ppt->index_tp_theta_cdm,  ppt->has_source_theta_cdm, index_type,1);
+      class_define_index(ppt->index_tp_theta_eDM,  ppt->has_source_theta_eDM, index_type,1);
       class_define_index(ppt->index_tp_theta_idm,  ppt->has_source_theta_idm, index_type,1);
       class_define_index(ppt->index_tp_theta_dcdm, ppt->has_source_theta_dcdm,index_type,1);
       class_define_index(ppt->index_tp_theta_fld,  ppt->has_source_theta_fld, index_type,1);
@@ -3421,6 +3422,9 @@ int perturbations_prepare_k_output(struct background * pba,
       /* Cold dark matter */
       class_store_columntitle(ppt->scalar_titles,"delta_cdm",pba->has_cdm);
       class_store_columntitle(ppt->scalar_titles,"theta_cdm",pba->has_cdm);
+      /* Evolving dark matter */
+      class_store_columntitle(ppt->scalar_titles,"delta_eDM",pba->has_eDM);
+      class_store_columntitle(ppt->scalar_titles,"theta_eDM",pba->has_eDM);
       /* Interacting dark matter */
       class_store_columntitle(ppt->scalar_titles,"delta_idm",pba->has_idm);
       class_store_columntitle(ppt->scalar_titles,"theta_idm",pba->has_idm);
@@ -4011,6 +4015,10 @@ int perturbations_vector_init(
     class_define_index(ppv->index_pt_delta_cdm,pba->has_cdm,index_pt,1); /* cdm density */
     class_define_index(ppv->index_pt_theta_cdm,pba->has_cdm && (ppt->gauge == newtonian),index_pt,1); /* cdm velocity */
 
+    /* eDM */
+    class_define_index(ppv->index_pt_delta_eDM,pba->has_eDM,index_pt,1); /* eDM density */
+    class_define_index(ppv->index_pt_theta_eDM,pba->has_eDM,index_pt,1); /* eDM velocity */
+
     /* idm */
     class_define_index(ppv->index_pt_delta_idm,pba->has_idm,index_pt,1); /* idm density */
     class_define_index(ppv->index_pt_theta_idm,pba->has_idm,index_pt,1); /* idm velocity */
@@ -4464,6 +4472,16 @@ int perturbations_vector_init(
           ppv->y[ppv->index_pt_theta_cdm] =
             ppw->pv->y[ppw->pv->index_pt_theta_cdm];
         }
+      }
+
+      /* eDM */
+      if (pba->has_eDM == _TRUE_) {
+
+        ppv->y[ppv->index_pt_delta_eDM] =
+          ppw->pv->y[ppw->pv->index_pt_delta_eDM];
+
+        ppv->y[ppv->index_pt_theta_eDM] =
+          ppw->pv->y[ppw->pv->index_pt_theta_eDM];
       }
 
       if (pba->has_idm == _TRUE_) {
@@ -5371,11 +5389,13 @@ int perturbations_initial_conditions(struct precision * ppr,
   double a,a_prime_over_a;
   double w_fld,dw_over_da_fld,integral_fld;
   double delta_ur=0.,theta_ur=0.,shear_ur=0.,l3_ur=0.,eta=0.,delta_cdm=0.,alpha, alpha_prime;
+  double delta_eDM=0.;
   double delta_dr=0;
   double q,epsilon,k2;
   int index_q,n_ncdm,idx;
   double rho_r,rho_m,rho_nu,rho_m_over_rho_r, rho_cdm =0.;
   double fracnu,fracg,fracb,fraccdm = 0.,fracidm = 0.;
+  double fraceDM=0.;
   double om;
   double ktau_two,ktau_three;
   double f_dr;
@@ -5416,6 +5436,11 @@ int perturbations_initial_conditions(struct precision * ppr,
 
     if (pba->has_cdm == _TRUE_) {
       rho_m += ppw->pvecback[pba->index_bg_rho_cdm];
+    }
+
+    /* eDM */
+    if (pba->has_eDM == _TRUE_) {
+      rho_m += ppw->pvecback[pba->index_bg_rho_eDM];
     }
 
     if (pba->has_idm == _TRUE_) {
@@ -5464,6 +5489,11 @@ int perturbations_initial_conditions(struct precision * ppr,
     /* f_cdm = Omega_cdm(t_i) / Omega_m(t_i) */
     if (pba->has_cdm == _TRUE_)
       fraccdm = ppw->pvecback[pba->index_bg_rho_cdm]/rho_m;
+
+    /* f_eDM = Omega_eDM(t_i) / Omega_m(t_i) */
+    if(pba->has_eDM == _TRUE_){
+      fraceDM = ppw->pvecback[pba->index_bg_rho_eDM]/rho_m;
+    }
 
     /* f_idm = Omega_idm(t_i) / Omega_m(t_i) */
     if (pba->has_idm == _TRUE_){
@@ -5530,6 +5560,10 @@ int perturbations_initial_conditions(struct precision * ppr,
       if (pba->has_cdm == _TRUE_) {
         ppw->pv->y[ppw->pv->index_pt_delta_cdm] = 3./4.*ppw->pv->y[ppw->pv->index_pt_delta_g]; /* cdm density */
         /* cdm velocity vanishes in the synchronous gauge */
+      }
+
+      if (pba->has_eDM == _TRUE_) {
+        ppw->pv->y[ppw->pv->index_pt_delta_eDM] = 3./4.*ppw->pv->y[ppw->pv->index_pt_delta_g]; /* eDM density */
       }
 
       /* interacting dark matter */
@@ -5612,6 +5646,11 @@ int perturbations_initial_conditions(struct precision * ppr,
 
     if ((ppt->has_cdi == _TRUE_) && (index_ic == ppt->index_ic_cdi)) {
 
+      /* eDM */
+      class_test((pba->has_eDM == _TRUE_),
+                 ppt->error_message,
+                 "only adiabatic ic in presence of evolving dark matter");
+
       class_test((pba->has_idr == _TRUE_),
                  ppt->error_message,
                  "only adiabatic ic in presence of interacting dark radiation");
@@ -5646,6 +5685,10 @@ int perturbations_initial_conditions(struct precision * ppr,
     /** - --> (b.3.) Baryon Isocurvature */
 
     if ((ppt->has_bi == _TRUE_) && (index_ic == ppt->index_ic_bi)) {
+
+      class_test((pba->has_eDM == _TRUE_),
+                 ppt->error_message,
+                 "only adiabatic ic in presence of evolving dark matter");
 
       class_test((pba->has_idr == _TRUE_),
                  ppt->error_message,
@@ -5687,6 +5730,10 @@ int perturbations_initial_conditions(struct precision * ppr,
                  ppt->error_message,
                  "only adiabatic ic in presence of interacting dark radiation");
 
+      class_test((pba->has_eDM == _TRUE_),
+                ppt->error_message,
+                "only adiabatic ic in presence of evolving dark matter");
+
       ppw->pv->y[ppw->pv->index_pt_delta_g] = ppr->entropy_ini*fracnu/fracg*(-1.+ktau_two/6.);
       ppw->pv->y[ppw->pv->index_pt_theta_g] = -ppr->entropy_ini*fracnu/fracg*k*k*tau*(1./4.-fracb/fracg*3./16.*om*tau);
 
@@ -5718,6 +5765,10 @@ int perturbations_initial_conditions(struct precision * ppr,
       class_test((pba->has_idr == _TRUE_),
                  ppt->error_message,
                  "only adiabatic ic in presence of interacting dark radiation");
+
+      class_test((pba->has_eDM == _TRUE_),
+                ppt->error_message,
+                "only adiabatic ic in presence of evolving dark matter");
 
       ppw->pv->y[ppw->pv->index_pt_delta_g] = ppr->entropy_ini*k*tau*fracnu/fracg*
         (1. - 3./16.*fracb*(2.+fracg)/fracg*om*tau); /* small diff wrt camb */
@@ -5785,6 +5836,13 @@ int perturbations_initial_conditions(struct precision * ppr,
         rho_cdm += ppw->pvecback[pba->index_bg_rho_dcdm];
       }
 
+      /* eDM */
+      if (pba->has_eDM == _TRUE_){
+        delta_eDM = ppw->pv->y[ppw->pv->index_pt_delta_eDM];
+      }
+      else {
+        delta_eDM = 0.;
+      }
 
       if (rho_cdm > 0 ) {
         delta_cdm /= rho_cdm;
@@ -5802,6 +5860,12 @@ int perturbations_initial_conditions(struct precision * ppr,
         velocity_tot += rho_m_over_rho_r*fracidm*ppw->pv->y[ppw->pv->index_pt_theta_idm]/(1.+rho_m_over_rho_r);
       }
 
+      /* following idm method above but unclear whether we need more here */
+      if ( pba->has_eDM == _TRUE_ ) {
+        delta_tot += rho_m_over_rho_r*fraceDM*ppw->pv->y[ppw->pv->index_pt_delta_eDM]/(1.+rho_m_over_rho_r);
+        velocity_tot += rho_m_over_rho_r*fraceDM*ppw->pv->y[ppw->pv->index_pt_theta_eDM]/(1.+rho_m_over_rho_r);
+      }
+
       alpha = (eta + 3./2.*a_prime_over_a*a_prime_over_a/k/k/s2_squared*(delta_tot + 3.*a_prime_over_a/k/k*velocity_tot))/a_prime_over_a;
 
       ppw->pv->y[ppw->pv->index_pt_phi] = eta - a_prime_over_a*alpha;
@@ -5815,6 +5879,11 @@ int perturbations_initial_conditions(struct precision * ppr,
       if (pba->has_cdm == _TRUE_) {
         ppw->pv->y[ppw->pv->index_pt_delta_cdm] -= 3.*a_prime_over_a*alpha;
         ppw->pv->y[ppw->pv->index_pt_theta_cdm] = k*k*alpha;
+      }
+
+      if (pba->has_eDM == _TRUE_) {
+        ppw->pv->y[ppw->pv->index_pt_delta_eDM] -= 3.*(1.+w_eDM_of_a(pba, a))*a_prime_over_a*alpha;
+        ppw->pv->y[ppw->pv->index_pt_theta_eDM] = k*k*alpha;
       }
 
       if (pba->has_idm == _TRUE_){
@@ -6983,6 +7052,25 @@ int perturbations_total_stress_energy(
       }
     }
 
+    /* eDM contribution */
+    if (pba->has_eDM == _TRUE_) {
+      double w_eDM = ppw->pvecback[pba->index_bg_w_eDM];
+      double c2_eDM = ppw->pvecback[pba->index_bg_c2_eDM];
+      ppw->delta_rho += ppw->pvecback[pba->index_bg_rho_eDM]*y[ppw->pv->index_pt_delta_eDM]; // contribution to total perturbed stress-energy
+      ppw->rho_plus_p_theta += (1.+w_eDM)*ppw->pvecback[pba->index_bg_rho_eDM]*y[ppw->pv->index_pt_theta_eDM]; // contribution to total perturbed stress-energy
+      ppw->rho_plus_p_tot += (1.+w_eDM)*ppw->pvecback[pba->index_bg_rho_eDM];
+      ppw->delta_p += -3.*a_prime_over_a*c2_eDM*(1.+w_eDM)*ppw->pvecback[pba->index_bg_rho_eDM]*y[ppw->pv->index_pt_theta_eDM]/k/k;
+      if (ppt->has_source_delta_m == _TRUE_) {
+        delta_rho_m += ppw->pvecback[pba->index_bg_rho_eDM]*y[ppw->pv->index_pt_delta_eDM]; // contribution to delta rho_matter
+        rho_m += ppw->pvecback[pba->index_bg_rho_eDM];
+      }
+      if ((ppt->has_source_delta_m == _TRUE_) || (ppt->has_source_theta_m == _TRUE_)) {
+        if (ppt->gauge == newtonian)
+          rho_plus_p_theta_m += (1+w_eDM)*ppw->pvecback[pba->index_bg_rho_eDM]*y[ppw->pv->index_pt_theta_eDM]; // contribution to [(rho+p)theta]_matter
+        rho_plus_p_m += (1+w_eDM)*ppw->pvecback[pba->index_bg_rho_eDM];
+      }
+    }
+
     /* idm contribution */
     if (pba->has_idm == _TRUE_) {
       ppw->delta_rho += ppw->pvecback[pba->index_bg_rho_idm]*y[ppw->pv->index_pt_delta_idm];
@@ -7860,6 +7948,14 @@ int perturbations_sources(
         + 3.*a_prime_over_a*theta_over_k2; // N-body gauge correction
     }
 
+    /* eDM */
+    /* KNFLAG: I don't think you should use eDM gauge correction, fluid correction suggest
+      this is not as trivial as currently implemented */
+    if (ppt->has_source_delta_eDM == _TRUE_){
+      _set_source_(ppt->index_tp_delta_eDM) = y[ppw->pv->index_pt_delta_eDM]
+        + 3.*a_prime_over_a*theta_over_k2;
+    }
+
     /* delta_idm */
     if (ppt->has_source_delta_idm == _TRUE_) {
       _set_source_(ppt->index_tp_delta_idm) = y[ppw->pv->index_pt_delta_idm]
@@ -7973,6 +8069,15 @@ int perturbations_sources(
     /* theta_cdm */
     if (ppt->has_source_theta_cdm == _TRUE_) {
       _set_source_(ppt->index_tp_theta_cdm) = y[ppw->pv->index_pt_theta_cdm]
+        + theta_shift; // N-body gauge correction
+    }
+
+    /* eDM */
+    /* theta_eDM */
+    /* KNFLAG: I don't think you should use eDM gauge correction, fluid correction suggest
+      this is not as trivial as currently implemented */
+    if (ppt->has_source_theta_eDM == _TRUE_) {
+      _set_source_(ppt->index_tp_theta_eDM) = y[ppw->pv->index_pt_theta_eDM]
         + theta_shift; // N-body gauge correction
     }
 
@@ -8135,6 +8240,7 @@ int perturbations_print_variables(double tau,
   double delta_g,theta_g,shear_g,l4_g,pol0_g,pol1_g,pol2_g,pol4_g;
   double delta_b,theta_b;
   double delta_cdm=0.,theta_cdm=0.;
+  double delta_eDM=0.,theta_eDM=0.;
   double delta_idm=0., theta_idm=0.;
   double delta_dcdm=0.,theta_dcdm=0.;
   double delta_dr=0.,theta_dr=0.,shear_dr=0., f_dr=1.0;
@@ -8317,6 +8423,18 @@ int perturbations_print_variables(double tau,
       }
     }
 
+    /* eDM */
+    if (pba->has_eDM == _TRUE_) {
+
+      delta_eDM = y[ppw->pv->index_pt_delta_eDM];
+      if (ppt->gauge == synchronous) {
+        theta_eDM = 0.;
+      }
+      else {
+        theta_eDM = y[ppw->pv->index_pt_theta_eDM];
+      }
+    }
+
     if (pba->has_idm == _TRUE_) {
       delta_idm = y[ppw->pv->index_pt_delta_idm];
       theta_idm = y[ppw->pv->index_pt_theta_idm];
@@ -8466,6 +8584,12 @@ int perturbations_print_variables(double tau,
         theta_cdm += k*k*alpha;
       }
 
+      /* eDM */ /// **KN** check drho/rho
+      if (pba->has_eDM == _TRUE_) {
+        delta_eDM -= 3. * (1.+pvecback[pba->index_bg_w_eDM]) * pvecback[pba->index_bg_H]*pvecback[pba->index_bg_a]*alpha;
+        theta_eDM += k*k*alpha;
+      }
+
       if (pba->has_idm == _TRUE_) {
         delta_idm -= 3. * pvecback[pba->index_bg_H]*pvecback[pba->index_bg_a]*alpha;
         theta_idm += k*k*alpha;
@@ -8534,6 +8658,9 @@ int perturbations_print_variables(double tau,
     /* Cold dark matter */
     class_store_double(dataptr, delta_cdm, pba->has_cdm, storeidx);
     class_store_double(dataptr, theta_cdm, pba->has_cdm, storeidx);
+    /* Evolving Dark Matter - eDM */
+    class_store_double(dataptr, delta_eDM, pba->has_eDM, storeidx);
+    class_store_double(dataptr, theta_eDM, pba->has_eDM, storeidx);
     /* Interacting dark matter */
     class_store_double(dataptr, delta_idm, pba->has_idm, storeidx);
     class_store_double(dataptr, theta_idm, pba->has_idm, storeidx);
@@ -9230,6 +9357,19 @@ int perturbations_derivs(double tau,
       if (ppt->gauge == synchronous) {
         dy[pv->index_pt_delta_cdm] = -metric_continuity; /* cdm density */
       }
+    }
+
+    /* eDM */ // see https://repositorio.ul.pt/bitstream/10451/32014/1/ulfc124314_tm_Diogo_Castel%C3%A3o.pdf eq 1.86 and 1.87
+    if (pba->has_eDM == _TRUE_) {
+      /* - ----> eDM density */
+      dy[pv->index_pt_delta_eDM] =
+        -(1+pvecback[pba->index_bg_w_eDM])*(y[pv->index_pt_theta_eDM] + metric_continuity)
+        +3.*pvecback[pba->index_bg_w_eDM]*a_prime_over_a*y[pv->index_pt_delta_eDM];
+        //+9.*(1.+pvecback[pba->index_bg_w_eDM])*pvecback[pba->index_bg_c2_eDM]*a_prime_over_a*y[pv->index_pt_theta_eDM]/k2;
+      /* - ----> eDM velocity */
+      dy[pv->index_pt_theta_eDM] =
+        -(1.-3*pvecback[pba->index_bg_c2_eDM])*a_prime_over_a*y[pv->index_pt_theta_eDM];
+        //+ metric_euler;
     }
 
     /** - ---> interacting dark radiation */

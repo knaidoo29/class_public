@@ -572,6 +572,16 @@ int background_functions(
     rho_r += pvecback[pba->index_bg_rho_idr];
   }
 
+  /* evolving dark matter */
+  if (pba->has_eDM == _TRUE_) {
+    pvecback[pba->index_bg_w_eDM] = w_eDM_of_a(pba,a);
+    pvecback[pba->index_bg_c2_eDM] = c2_eDM_of_a(pba,a);
+    pvecback[pba->index_bg_rho_eDM] = rho_eDM_of_a(pba,a);
+    rho_m += pvecback[pba->index_bg_rho_eDM];
+    rho_tot += pvecback[pba->index_bg_rho_eDM];
+    p_tot += pvecback[pba->index_bg_w_eDM] * pvecback[pba->index_bg_rho_eDM];
+  }
+
   /** - compute expansion rate H from Friedmann equation: this is the
       only place where the Friedmann equation is assumed. Remember
       that densities are all expressed in units of \f$ [3c^2/8\pi G] \f$, ie
@@ -972,6 +982,7 @@ int background_indices(
   /** - initialize all flags: which species are present? */
 
   pba->has_cdm = _FALSE_;
+  pba->has_eDM = _FALSE_;
   pba->has_idm = _FALSE_;
   pba->has_ncdm = _FALSE_;
   pba->has_dcdm = _FALSE_;
@@ -986,6 +997,9 @@ int background_indices(
 
   if (pba->Omega0_cdm != 0.)
     pba->has_cdm = _TRUE_;
+
+  if (pba->Omega0_eDM != 0.)
+    pba->has_eDM = _TRUE_;
 
   if (pba->Omega0_idm != 0.)
     pba->has_idm = _TRUE_;
@@ -1042,6 +1056,11 @@ int background_indices(
 
   /* - index for rho_cdm */
   class_define_index(pba->index_bg_rho_cdm,pba->has_cdm,index_bg,1);
+
+  /* - index for rho_eDM, w_eDM, c2_eDM */
+  class_define_index(pba->index_bg_rho_eDM,pba->has_eDM,index_bg,1);
+  class_define_index(pba->index_bg_w_eDM,pba->has_eDM,index_bg,1);
+  class_define_index(pba->index_bg_c2_eDM,pba->has_eDM,index_bg,1);
 
   /* - index for rho_idm  */
   class_define_index(pba->index_bg_rho_idm,pba->has_idm,index_bg,1);
@@ -2437,6 +2456,9 @@ int background_output_titles(
   class_store_columntitle(titles,"(.)rho_g",_TRUE_);
   class_store_columntitle(titles,"(.)rho_b",_TRUE_);
   class_store_columntitle(titles,"(.)rho_cdm",pba->has_cdm);
+  class_store_columntitle(titles,"(.)rho_edm",pba->has_eDM);
+  class_store_columntitle(titles,"(.)w_edm",pba->has_eDM);
+  class_store_columntitle(titles,"(.)c2_edm",pba->has_eDM);
   class_store_columntitle(titles,"(.)rho_idm",pba->has_idm);
   if (pba->has_ncdm == _TRUE_) {
     for (n=0; n<pba->N_ncdm; n++) {
@@ -2629,6 +2651,9 @@ int background_derivs(
   if (pba->has_cdm == _TRUE_) {
     rho_M += pvecback[pba->index_bg_rho_cdm];
   }
+  if (pba->has_eDM == _TRUE_){
+    rho_M += pvecback[pba->index_bg_rho_eDM];
+  }
   if (pba->has_idm == _TRUE_){
     rho_M += pvecback[pba->index_bg_rho_idm];
   }
@@ -2798,6 +2823,10 @@ int background_output_budget(
     if (pba->has_cdm == _TRUE_) {
       class_print_species("Cold Dark Matter",cdm);
       budget_matter+=pba->Omega0_cdm;
+    }
+    if (pba->has_eDM == _TRUE_) {
+      class_print_species("Evolving Dark Matter",eDM);
+      budget_matter+=pba->Omega0_eDM;
     }
     if (pba->has_idm == _TRUE_){
       class_print_species("Interacting DM - idr,b,g",idm);
@@ -2995,4 +3024,41 @@ double ddV_scf(
                struct background *pba,
                double phi) {
   return ddV_e_scf(pba,phi)*V_p_scf(pba,phi) + 2*dV_e_scf(pba,phi)*dV_p_scf(pba,phi) + V_e_scf(pba,phi)*ddV_p_scf(pba,phi);
+}
+
+/* eDM functions */
+
+double w_eDM_of_a(struct background *pba, double a) {
+  int i;
+  double w = 0.;
+  if (a >= pba->a_nz_eDM){
+    w = pba->w_0_eDM * (a - pba->a_nz_eDM) / (1 - pba->a_nz_eDM);
+  }
+  return w;
+}
+
+double c2_eDM_of_a(struct background *pba, double a) {
+  int i;
+  double w, c2=0., wtilde;
+  if (a >= pba->a_nz_eDM){
+    w = w_eDM_of_a(pba, a);
+    wtilde = pba->w_0_eDM / (1. - pba->a_nz_eDM);
+    c2 = w - a*wtilde/(3.*(1.+w));
+  }
+  return c2;
+}
+
+double rho_eDM_of_a(struct background *pba, double a) {
+  int i;
+  double rho=0., w_int_a=0.;
+  w_int_a = 3. * pba->w_0_eDM;
+  if (a >= pba->a_nz_eDM){
+    w_int_a *= (1. - a + pba->a_nz_eDM * log(a));
+  }
+  else{
+    w_int_a *= (1. - pba->a_nz_eDM + pba->a_nz_eDM * log(pba->a_nz_eDM));
+  }
+  w_int_a /= (1. - pba->a_nz_eDM);
+  rho = pba->Omega0_eDM * pow(pba->H0,2) * exp(w_int_a) / pow(a, 3.);
+  return rho;
 }

@@ -71,6 +71,8 @@ struct background
 
   double Omega0_cdm;      /**< \f$ \Omega_{0 cdm} \f$: cold dark matter */
 
+  double Omega0_eDM;      /**< \f$ \Omega_{0 eDM} \f$: evolving dark matter */
+
   double Omega0_idm; /**< \f$ \Omega_{0 idm} \f$: interacting dark matter with photons, baryons, and idr */
 
 
@@ -81,6 +83,10 @@ struct background
   double Omega_ini_dcdm;  /**< \f$ \Omega_{ini,dcdm} \f$: rescaled initial value for dcdm density (see 1407.2418 for definitions) */
   double Gamma_dcdm;      /**< \f$ \Gamma_{dcdm} \f$: decay constant for decaying cold dark matter */
   double tau_dcdm;
+
+  /* eDM coefficients */
+  double w_0_eDM;  /* eDM equation-of-state at z=0 */
+  double a_nz_eDM; /* scale factor switch to non-linear */
 
   int N_ncdm;                            /**< Number of distinguishable ncdm species */
   /* the following parameters help to define tabulated ncdm p-s-d passed in file */
@@ -168,6 +174,11 @@ struct background
   int index_bg_rho_g;         /**< photon density */
   int index_bg_rho_b;         /**< baryon density */
   int index_bg_rho_cdm;       /**< cdm density */
+
+  int index_bg_rho_eDM;       /**< eDM density */
+  int index_bg_w_eDM;
+  int index_bg_c2_eDM;
+
   int index_bg_rho_idm;       /**< idm density */
   int index_bg_rho_lambda;    /**< cosmological constant density */
   int index_bg_rho_fld;       /**< fluid density */
@@ -199,7 +210,7 @@ struct background
   /* end of vector in normal format, now quantities in long format */
 
   int index_bg_rho_crit;      /**< critical density */
-  int index_bg_Omega_m;       /**< non-relativistic density fraction (\f$ \Omega_b + \Omega_cdm + \Omega_{\nu nr} \f$) */
+  int index_bg_Omega_m;       /**< non-relativistic density fraction (\f$ \Omega_b + \Omega_cdm + \Omega_eDM + \Omega_{\nu nr} \f$) */
   int index_bg_conf_distance; /**< conformal distance (from us) in Mpc */
   int index_bg_ang_distance;  /**< angular diameter distance in Mpc */
   int index_bg_lum_distance;  /**< luminosity distance in Mpc */
@@ -284,6 +295,7 @@ struct background
   //@{
 
   short has_cdm;       /**< presence of cold dark matter? */
+  short has_eDM;       /**< presence of evolving dark matter? */
   short has_idm;       /**< presence of interacting dark matter with photons, baryons, and idr */
   short has_dcdm;      /**< presence of decaying cold dark matter? */
   short has_dr;        /**< presence of relativistic decay radiation? */
@@ -571,6 +583,11 @@ extern "C" {
                double phi,
                double phi_prime
                );
+
+  /* eDM */
+  double w_eDM_of_a(struct background *pba, double a);
+  double c2_eDM_of_a(struct background *pba, double a);
+  double rho_eDM_of_a(struct background *pba, double a);
 
 #ifdef __cplusplus
 }

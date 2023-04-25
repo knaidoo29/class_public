@@ -2309,7 +2309,7 @@ int input_read_parameters_species(struct file_content * pfc,
   double sigma_B; // Stefan-Boltzmann constant
   double stat_f_idr = 7./8.;
   double f_cdm=1., f_idm=0.;
-  short has_m_budget = _FALSE_, has_cdm_userdefined = _FALSE_;
+  short has_m_budget = _FALSE_, has_cdm_userdefined = _FALSE_, has_eDM_userdefined = _FALSE_;
   double Omega_m_remaining = 0.;
 
 
@@ -3102,6 +3102,29 @@ int input_read_parameters_species(struct file_content * pfc,
     pba->Omega0_cdm = Omega_m_remaining;
   }
 
+  /* eDM */
+  /* Read */
+  class_call(parser_read_double(pfc,"Omega_edm",&param1,&flag1,errmsg),
+             errmsg,
+             errmsg);
+  class_call(parser_read_double(pfc,"omega_edm",&param2,&flag2,errmsg),
+             errmsg,
+             errmsg);
+  /* Test */
+  class_test(((flag1 == _TRUE_) && (flag2 == _TRUE_)),
+             errmsg,
+             "You can only enter one of 'Omega_edm' or 'omega_edm'.");
+  /* Complete set of parameters */
+  if (flag1 == _TRUE_){
+    pba->Omega0_eDM = param1;
+    has_eDM_userdefined = _TRUE_;
+  }
+  if (flag2 == _TRUE_){
+    pba->Omega0_eDM = param2/pba->h/pba->h;
+    has_eDM_userdefined = _TRUE_;
+  }
+  class_test(has_eDM_userdefined == _TRUE_ && has_m_budget == _TRUE_, errmsg, "If you want to use 'Omega_m' you cannot fix 'Omega_edm' simultaneously. Please remove either 'Omega_edm' or 'Omega_m' from the input file.");
+
   /* When the CDM density is determined we can use the previously collected fractions to determine the corresponding densities. First, make sure everything is reasonable*/
   class_test((f_idm > 0.) && (pba->Omega0_cdm == 0.),
              errmsg,
@@ -3125,6 +3148,25 @@ int input_read_parameters_species(struct file_content * pfc,
     pba->Omega0_cdm = ppr->Omega0_cdm_min_synchronous;
   }
 
+  /* eDM */
+
+  if (pba->Omega0_eDM != 0.) {
+
+      /** defining eDM model 2 const **/
+      class_call(parser_read_double(pfc,"w_0_eDM",&param1,&flag1,errmsg),
+                 errmsg,
+                 errmsg);
+
+      pba->w_0_eDM = param1;
+
+      /** defining eDM model 2 a_switch from w=0 to linearly growing w **/
+      class_call(parser_read_double(pfc,"a_nz_eDM",&param1,&flag1,errmsg),
+                 errmsg,
+                 errmsg);
+
+      pba->a_nz_eDM = param1;
+
+  }
   /* At this point all the species should be set, and used for the budget equation below */
 
   /** 8) Dark energy
@@ -3166,6 +3208,7 @@ int input_read_parameters_species(struct file_content * pfc,
   Omega_tot += pba->Omega0_dcdmdr;
   Omega_tot += pba->Omega0_idr;
   Omega_tot += pba->Omega0_ncdm_tot;
+  Omega_tot += pba->Omega0_eDM;
   /* Step 1 */
   if (flag1 == _TRUE_){
     pba->Omega0_lambda = param1;
@@ -4768,7 +4811,7 @@ int input_read_parameters_spectra(struct file_content * pfc,
                errmsg,
                errmsg);
     /* Complete set of parameters */
-    if ((flag1 == _TRUE_)) {
+    if (flag1 == _TRUE_) {
       if ((strstr(string1,"analytic") != NULL)){
         ptr->has_nz_analytic = _TRUE_;
       }
@@ -4783,7 +4826,7 @@ int input_read_parameters_spectra(struct file_content * pfc,
                errmsg,
                errmsg);
     /* Complete set of parameters */
-    if ((flag1 == _TRUE_)) {
+    if (flag1 == _TRUE_) {
       if ((strstr(string1,"analytic") != NULL)){
         ptr->has_nz_evo_analytic = _TRUE_;
       }
@@ -5762,11 +5805,13 @@ int input_default_params(struct background *pba,
   ppt->has_idm_soundspeed = _FALSE_;
 
   /* ** ADDITIONAL SPECIES ** */
+  /* eDM */
+  pba->Omega0_eDM = 0.;
 
   /** 9) Dark energy contributions */
   pba->Omega0_fld = 0.;
   pba->Omega0_scf = 0.;
-  pba->Omega0_lambda = 1.-pba->Omega0_k-pba->Omega0_g-pba->Omega0_ur-pba->Omega0_b-pba->Omega0_cdm-pba->Omega0_ncdm_tot-pba->Omega0_dcdmdr - pba->Omega0_idr -pba->Omega0_idm;
+  pba->Omega0_lambda = 1.-pba->Omega0_k-pba->Omega0_g-pba->Omega0_ur-pba->Omega0_b-pba->Omega0_cdm-pba->Omega0_ncdm_tot-pba->Omega0_dcdmdr - pba->Omega0_eDM - pba->Omega0_idr -pba->Omega0_idm;
   /** 8.a) Omega fluid */
   /** 8.a.1) PPF approximation */
   pba->use_ppf = _TRUE_;
