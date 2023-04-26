@@ -8,7 +8,7 @@
  * Default initial value of scale factor used in the integration of background quantities.
  * For models like ncdm, the code may decide to start the integration earlier.
  */
-class_precision_parameter(a_ini_over_a_today_default,double,1.e-14)
+class_precision_parameter(a_ini_over_a_today_default,double,1.e-16)
 /**
  * Number of background integration steps that are stored in the output vector
  */
